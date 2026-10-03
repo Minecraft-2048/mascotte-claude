@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
@@ -37,7 +38,13 @@ namespace MascotteClaude
                 File.WriteAllText(Mascotte.FichierEtat, args[1] + "\n" + message);
                 return 0;
             }
+            return Lancer();
+        }
 
+        // À part de Main : un hook qui ne fait qu'envoyer un état ne charge ainsi jamais WPF.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Lancer()
+        {
             bool premiere;
             using (new Mutex(true, "MascotteClaude-Instance", out premiere))
             {
@@ -687,13 +694,16 @@ namespace MascotteClaude
             switch (etat)
             {
                 case "running": case "travail":
-                    agent = Agent.Travail;
                     minuteurAgent.Start();
+                    // un hook renvoie « running » après chaque outil : on ne recommence ni la bulle ni l'animation
+                    if (agent == Agent.Travail && muet) return;
+                    agent = Agent.Travail;
                     Dire(muet ? "Je m'en occupe…" : message, 4);
                     break;
                 case "waiting": case "attente":
-                    agent = Agent.Attente;
                     minuteurAgent.Start();
+                    if (agent == Agent.Attente && muet) return;
+                    agent = Agent.Attente;
                     Dire(muet ? "J'ai besoin de toi !" : message, 0);
                     break;
                 case "review": case "fini":

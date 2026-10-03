@@ -38,26 +38,44 @@ Télécharger `MascotteClaude.exe` dans les [Releases](../../releases) et le lan
 
 ## La brancher sur Claude Code
 
-Exemple de *hooks* à ajouter dans `~/.claude/settings.json` (adapter le chemin de l'exe) :
+Avec ces *hooks* dans `~/.claude/settings.json`, la mascotte suit toute seule ce que fait Claude Code (adapter le chemin de l'exe) :
+
+| Moment | État envoyé |
+| --- | --- |
+| tu envoies un message, ou un outil vient de finir | `running` |
+| Claude te pose une question ou demande une autorisation | `waiting` |
+| Claude a fini de répondre | `review` |
+| le tour s'arrête sur une erreur | `failed` |
 
 ```json
 {
   "hooks": {
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": "\"C:/chemin/vers/MascotteClaude.exe\" --etat running" }] }
+      { "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "running"], "async": true, "timeout": 10 }] }
     ],
     "PostToolUse": [
-      { "hooks": [{ "type": "command", "command": "\"C:/chemin/vers/MascotteClaude.exe\" --etat running" }] }
+      { "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "running"], "async": true, "timeout": 10 }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "AskUserQuestion", "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "waiting"], "async": true, "timeout": 10 }] }
+    ],
+    "PermissionRequest": [
+      { "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "waiting"], "async": true, "timeout": 10 }] }
     ],
     "Notification": [
-      { "hooks": [{ "type": "command", "command": "\"C:/chemin/vers/MascotteClaude.exe\" --etat waiting" }] }
+      { "matcher": "permission_prompt|elicitation_dialog", "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "waiting"], "async": true, "timeout": 10 }] }
     ],
     "Stop": [
-      { "hooks": [{ "type": "command", "command": "\"C:/chemin/vers/MascotteClaude.exe\" --etat review" }] }
+      { "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "review"], "async": true, "timeout": 10 }] }
+    ],
+    "StopFailure": [
+      { "hooks": [{ "type": "command", "command": "C:/chemin/vers/MascotteClaude.exe", "args": ["--etat", "failed"], "async": true, "timeout": 10 }] }
     ]
   }
 }
 ```
+
+La forme `command` + `args` lance l'exe directement, sans passer par un shell : un chemin avec des espaces ne pose aucun problème. `async` évite de faire attendre Claude. Un état `running` répété ne relance ni la bulle ni l'animation.
 
 ## Changer son apparence
 
