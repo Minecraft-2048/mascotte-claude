@@ -36,6 +36,7 @@ namespace MascotteStickman
         public static readonly List<string> Familles = new List<string>();
         public static readonly List<Anim> Repos = new List<Anim>();
         public static Anim Marche, Course, Reception, Heros, SeReleve, Dort, Salut, PoingHaut, Poing, PiedMoyen, PiedBas, Danse, Concentration, Apparition;
+        public static Anim Appuie, Relache;
         public static double[] Groupe;
         public static double[] SautMonte, SautDescend;
 
@@ -165,6 +166,21 @@ namespace MascotteStickman
             return b;
         }
 
+        // Une main qui descend sous la ligne du sol (par-dessus un rebord) : ce sont les pieds qui restent posés.
+        static Anim PiedsPoses(Anim a)
+        {
+            Func<double, double[]> pose = a.Pose;
+            a.Pose = t =>
+            {
+                double[] p = pose(t);
+                p[I.Air] = 0;
+                Dessin.Os o = Dessin.Calculer(p, false);
+                p[I.Air] = Math.Max(Math.Max(o.P1.Y, o.P2.Y), Math.Max(o.G1.Y, o.G2.Y));
+                return p;
+            };
+            return a;
+        }
+
         public static void Construire()
         {
             SautMonte = L("-4 -10 150 20 -160 -10 30 -50 -10 -30");
@@ -177,6 +193,11 @@ namespace MascotteStickman
             Concentration = Cles(null, "Disparaît", "0:" + S + ";250:" + Cr + ";450:" + Cr);
             Apparition = Cles(null, "Apparaît", "0:" + Cr + ";150:" + Cr + ";450:" + S);
 
+            // mode farceur : accroupi au bord d'une fenêtre, il lève la main puis l'enfonce sur la croix, sous ses pieds
+            const string vise = "70 12 62 78 -50 20 100 -150 88 -146", presse = "78 6 4 0 -50 20 100 -150 88 -146";
+            Appuie = PiedsPoses(Cles(null, "Appuie sur la croix", "0:" + S + ";320:" + vise + ";760:" + vise + ";880:" + presse));
+            Relache = PiedsPoses(Cles(null, "Relâche la croix", "0:" + presse + ";450:" + presse + ";650:" + vise + ";1000:" + S));
+
             Attentes();
             Deplacements();
             Danses();
@@ -187,7 +208,164 @@ namespace MascotteStickman
             Quotidien();
             Emotions();
             Nouveautes();
+            Troisieme();
             Sonoriser();
+        }
+
+        // ------------------------------------------------------------ troisième fournée
+
+        static void Troisieme()
+        {
+            // --- déplacements
+            Pas("Course au ralenti", 45, 95, 50, 90, 16, 5, 60, 1.7);
+            Pas("Titube", 16, 20, 0, 0, 6, 0, 30, 1.5, 7);
+            Pas("Course en arrière", 38, 70, 40, 85, -8, 4, -150, 0.5);
+            Pas("Shuffle", 20, 45, 25, 80, 4, 4, 100, 0.35);
+            Anim cloche = Ajouter("Déplacements", "À cloche-pied", 0.5, 1, t =>
+            {
+                double u = Math.Max(0, Math.Sin(2 * Math.PI * t));
+                double[] p = L("4 0 40 80 -40 80 4 -30 30 -100");
+                p[I.Air] = 16 * u; p[I.Ge1] = -30 + 26 * u; p[I.Ha1] = 12 - 8 * u;
+                return p;
+            });
+            cloche.Deplace = true; cloche.Vitesse = 70;
+            Anim genoux = Ajouter("Déplacements", "Marche sur les genoux", 0.9, 1, t =>
+            {
+                double s = Math.Sin(2 * Math.PI * t);
+                double[] p = L("0 0 0 20 0 20 0 -95 0 -95");
+                p[I.Ha1] = 16 * s; p[I.Ha2] = -16 * s; p[I.Ep1] = -20 * s; p[I.Ep2] = 20 * s; p[I.Torse] = 3 * s;
+                return p;
+            });
+            genoux.Deplace = true; genoux.Vitesse = 26;
+            Anim boite = Ajouter("Déplacements", "Boitille", 1.1, 1, t =>
+            {
+                double f = 2 * Math.PI * t, s = Math.Sin(f), c = Math.Cos(f);
+                double[] p = L("8 5 0 20 0 20 0 0 0 0");
+                p[I.Ha1] = 24 * s; p[I.Ge1] = -40 * Math.Max(0, c); p[I.Ha2] = -10 * s; p[I.Torse] = 8 + 9 * Math.Max(0, -s); p[I.Ep1] = -14 * s; p[I.Ep2] = 30 + 10 * s; p[I.Co2] = 70;
+                return p;
+            });
+            boite.Deplace = true; boite.Vitesse = 30;
+            Anim ours = Ajouter("Déplacements", "À quatre pattes", 0.8, 1, t =>
+            {
+                double s = Math.Sin(2 * Math.PI * t);
+                double[] p = L("0 -30 0 0 0 0 0 0 0 0 0 55");
+                p[I.Ep1] = 55 + 22 * s; p[I.Ep2] = 55 - 22 * s; p[I.Ha1] = 40 - 24 * s; p[I.Ge1] = -40 - 20 * Math.Max(0, s); p[I.Ha2] = 40 + 24 * s; p[I.Ge2] = -40 - 20 * Math.Max(0, -s);
+                return p;
+            });
+            ours.Deplace = true; ours.Vitesse = 60;
+            Anim plane = Ajouter("Déplacements", "Vole comme un super-héros", 1.2, 1, t =>
+            {
+                double s = Math.Sin(2 * Math.PI * t);
+                double[] p = L("0 -30 172 0 10 5 -8 0 -4 -10 70 80");
+                p[I.Air] = 70 + 6 * s; p[I.Rot] = 80 + 3 * s; p[I.Ha2] = -4 + 5 * s;
+                return p;
+            });
+            plane.Deplace = true; plane.Vitesse = 210; plane.Son = "lance";
+
+            // --- combat
+            const string F = "Combat";
+            Coup("Coup de tête", "-15 -20 60 100 50 105 10 -15 -16 -10", "35 25 40 60 30 70 30 -30 -24 -8 0 0 10");
+            Cles(F, "Coup de pied en vrille", "0:" + G + ";140:-6 0 60 95 45 105 30 -40 -8 -12 6 90;260:-20 0 55 100 30 110 100 -4 -10 -10 32 200;380:-10 0 60 95 45 105 60 -60 -8 -12 14 320;500:" + G + " 0 360");
+            Cles(F, "Coup de pied en ciseaux", "0:" + G + ";140:" + Cr + ";280:-15 0 60 95 45 105 110 -4 -30 -70 40;400:-15 0 60 95 45 105 -20 -70 115 -4 46;540:-5 0 60 95 45 105 40 -50 20 -45 18;660:" + Cr + ";820:" + G);
+            double[] g = L(G), pied = L("-16 0 55 100 30 110 92 -4 -8 -10"), piedHaut = L("-30 -5 40 100 20 110 132 -4 -10 -8"), piedBas = L("-4 0 60 95 45 105 52 -2 -8 -12");
+            ClesP(F, "Pluie de coups de pied", new[] { 0, 0.14, 0.26, 0.38, 0.5, 0.62, 0.74, 0.86, 1.1 }, new[] { g, piedBas, g, pied, g, piedHaut, pied, piedHaut, g });
+            Cles(F, "Poing du dragon", "0:" + G + ";180:22 5 10 95 55 110 62 -112 52 -104;340:-8 -15 150 30 50 115 20 -30 -10 -60 55;500:-10 -18 170 10 50 115 10 -10 -14 -40 82;680:0 0 100 40 50 100 30 -50 20 -45 30;800:" + Cr + ";1000:" + G);
+            Cles(F, "Marteau géant", "0:" + G + ";300:-15 -10 170 10 175 5 14 -10 -16 -6;430:45 15 40 0 45 0 60 -95 30 -70;900:45 15 40 0 45 0 60 -95 30 -70;1200:" + G, "marteau");
+            Cles(F, "Lancer de javelot", "0:" + S + ";300:-15 -5 -110 20 70 10 -20 -10 22 -15;430:20 5 100 0 -40 30 28 -26 -24 -6 0 0 10;800:22 6 60 5 -40 30 28 -26 -24 -6 0 0 10;1100:" + S, "javelot");
+            Ajouter(F, "Nunchaku", 0.6, 6, t =>
+            {
+                double f = 2 * Math.PI * t;
+                double[] p = L(G);
+                p[I.Ep1] = 60 + 50 * Math.Sin(f); p[I.Co1] = 60 + 40 * Math.Cos(2 * f);
+                return p;
+            }).Objet = "baton";
+            Osc(F, "Esquives de boxeur", "20 5 75 100 60 108 30 -40 -6 -30 0 0 -8", "20 5 75 100 60 108 10 -35 -26 -40 0 0 8", 0.5, 6);
+            Cles(F, "Épée : parade et riposte", "0:6 0 40 80 -20 60 14 -15 -14 -10;200:0 0 70 110 -20 60 14 -15 -14 -10;450:-4 0 76 112 -22 60 12 -18 -16 -12;560:14 0 92 0 -50 30 34 -30 -28 -4 0 0 14;700:14 0 92 0 -50 30 34 -30 -28 -4 0 0 14;950:6 0 40 80 -20 60 14 -15 -14 -10", "epee");
+            Cles(F, "Charge", "0:" + G + ";150:30 0 -60 20 -70 20 40 -60 -30 -20;300:30 0 -60 20 -70 20 -30 -20 40 -60;450:30 0 -60 20 -70 20 40 -60 -30 -20;600:16 0 90 0 50 115 24 -22 -22 -6;780:16 0 90 0 50 115 24 -22 -22 -6;1000:" + G, null, 250);
+
+            // --- acrobaties
+            const string A = "Acrobaties";
+            Cles(A, "Triple salto", "0:" + S + ";180:" + Cr + ";330:-5 -10 160 10 -170 -10 8 -5 -4 -5 55 20;520:" + Boule + " 130 280;720:" + Boule + " 155 560;920:" + Boule + " 130 840;1090:5 0 80 20 70 25 40 -40 25 -35 40 1050;1200:" + Cr + " 0 1080;1420:" + S + " 0 1080", null, 80);
+            Cles(A, "Salto tendu", "0:" + S + ";150:" + Cr + ";280:-5 -10 172 5 -172 -5 5 0 -5 0 40 30;440:0 0 175 0 -175 0 3 0 -3 0 86 150;600:0 0 175 0 -175 0 3 0 -3 0 80 270;720:5 0 80 20 70 25 30 -30 20 -25 26 345;820:" + Cr + " 0 360;1020:" + S + " 0 360", null, 70);
+            Cles(A, "Roue sans les mains", "0:-4 -8 60 20 -60 -20 20 0 -20 0;220:0 0 40 60 -40 -60 35 0 -35 0 30 90;440:0 0 40 60 -40 -60 35 0 -35 0 48 180;660:0 0 40 60 -40 -60 35 0 -35 0 30 270;860:-4 -8 60 20 -60 -20 20 -10 -20 -10 0 360;1050:" + S + " 0 360", null, 130);
+            Cles(A, "Rondade flip", "0:-4 -8 170 0 190 0 20 0 -20 0;220:0 0 170 0 190 0 35 0 -35 0 0 90;440:0 0 170 0 190 0 35 0 -35 0 0 180;660:0 0 170 0 190 0 20 -20 -20 -20 0 290;800:" + Cr + " 0 360;950:-15 -20 170 0 -175 0 8 -5 -4 -5 30 335;1100:" + Boule + " 74 210;1250:" + Boule + " 66 80;1380:5 0 80 20 70 25 40 -40 25 -35 20 10;1480:" + Cr + ";1680:" + S, null, 70);
+            Cles(A, "Équilibre sur la tête", "0:" + S + ";300:80 10 150 0 145 0 30 -40 -30 0 0 40;650:0 0 150 100 155 95 4 0 -4 0 0 180;1300:0 0 150 100 155 95 50 0 -50 0 0 180;1950:0 0 150 100 155 95 4 0 -4 0 0 180;2300:80 10 150 0 145 0 30 -40 -30 0 0 40;2600:" + S);
+            Cles(A, "Grand jeté", "0:" + S + ";160:10 0 -40 20 60 20 40 -60 -30 -20;320:0 -10 150 0 -150 0 85 0 -85 0 44;500:0 -10 150 0 -150 0 85 0 -85 0 56;660:8 0 60 30 50 30 40 -50 -20 -40 18;780:" + Cr + ";960:" + S, null, 190);
+            Ajouter("Danses", "Vague du corps", 1.1, 5, t =>
+            {
+                double f = 2 * Math.PI * t;
+                double[] p = L(S);
+                p[I.Torse] = 14 * Math.Sin(f); p[I.Tete] = 10 * Math.Sin(f - 1); p[I.Ha1] = 6 + 6 * Math.Sin(f + 1); p[I.Ha2] = -6 + 6 * Math.Sin(f + 1);
+                p[I.Ge1] = p[I.Ge2] = -14 * (1 + Math.Sin(f + 2)); p[I.Ep1] = 20 + 20 * Math.Sin(f - 2); p[I.Ep2] = -20 + 20 * Math.Sin(f - 2);
+                return p;
+            }).Objet = "note";
+
+            // --- sport
+            const string P = "Sport";
+            Osc(P, "Tractions", "0 -10 178 0 180 0 2 -10 -2 -30 30", "0 -10 70 110 72 108 10 -30 6 -50 56", 1.6, 5, "barre");
+            Ajouter(P, "Mountain climbers", 0.5, 8, t =>
+            {
+                double s = Math.Sin(2 * Math.PI * t);
+                double[] p = L(Planche);
+                p[I.Ha1] = 70 * Math.Max(0, s); p[I.Ge1] = -90 * Math.Max(0, s); p[I.Ha2] = 2 + 70 * Math.Max(0, -s); p[I.Ge2] = -90 * Math.Max(0, -s);
+                return p;
+            });
+            Cles(P, "Haltérophilie", "0:" + S + ";300:40 -10 20 0 22 0 70 -115 60 -108;700:10 -5 60 130 62 130 30 -50 20 -45;1000:0 -8 178 0 180 0 8 0 -8 0;1800:0 -8 178 0 180 0 10 -4 -10 -4;2100:30 0 20 0 22 0 50 -80 40 -75;2400:" + S, "haltere");
+            Osc(P, "Fentes sautées", "5 0 -35 105 -45 112 70 -85 -40 -75", "5 0 -35 105 -45 112 -40 -75 70 -85 14", 0.8, 6);
+            Cles(P, "Kata de karaté", "0:" + G + ";350:16 0 90 0 50 115 24 -22 -22 -6 0 0 8;700:6 0 110 80 100 85 14 -15 -14 -10;1050:20 10 50 60 40 70 25 -40 -10 -35;1400:-16 0 55 100 30 110 92 -4 -8 -10;1750:" + G + ";2100:45 15 60 80 55 85 6 0 -6 0;2600:" + S);
+            Cles(P, "Tai-chi", "0:" + S + ";900:4 0 70 20 30 60 20 -30 -14 -24;1800:8 0 100 10 -40 40 34 -40 -20 -16 0 0 6;2700:0 0 40 70 80 20 14 -30 -20 -30 0 0 -4;3600:-4 0 -30 40 110 10 -10 -20 26 -36 0 0 -8;4500:" + S);
+            Ajouter(P, "Rameur", 1.4, 5, t =>
+            {
+                double c = Math.Cos(2 * Math.PI * t), d = (1 + c) / 2;
+                double[] p = L("0 0 0 0 0 0 0 0 0 0");
+                p[I.Ha1] = 95 + 20 * d; p[I.Ge1] = -10 - 70 * d; p[I.Ha2] = 92 + 20 * d; p[I.Ge2] = -8 - 70 * d;
+                p[I.Torse] = -22 + 34 * d; p[I.Ep1] = 78 - 30 * (1 - d); p[I.Co1] = 4 + 80 * (1 - d); p[I.Ep2] = 74 - 30 * (1 - d); p[I.Co2] = 6 + 80 * (1 - d);
+                return p;
+            });
+            Cles(P, "Smash de volley", "0:" + S + ";200:" + Cr + ";400:-12 -15 -60 60 150 10 10 -30 -10 -50 46;520:14 0 110 0 60 40 20 -20 -10 -40 52;700:20 5 40 10 30 30 30 -50 20 -45 20;820:" + Cr + ";1000:" + S, "ballontir");
+            Osc(P, "Jongle avec un ballon", "-4 8 20 30 -30 30 30 -20 -6 -4", "-4 8 20 30 -30 30 72 -62 -6 -4", 0.5, 10, "ballonjongle");
+            Ajouter(P, "Hula hoop", 0.6, 8, t =>
+            {
+                double f = 2 * Math.PI * t;
+                double[] p = L("0 0 120 60 -120 -60 8 -8 -8 -8");
+                p[I.X] = 6 * Math.Sin(f); p[I.Torse] = -4 * Math.Sin(f);
+                return p;
+            }).Objet = "cerceau";
+            Osc(P, "Ski (schuss)", "40 -25 -40 100 -45 100 70 -110 64 -104", "44 -22 -36 104 -41 104 76 -118 70 -112", 0.9, 4, "planche");
+
+            // --- vie quotidienne
+            const string Q = "Quotidien";
+            Osc(Q, "Fait ses lacets", "55 25 30 20 35 15 80 -120 -10 -100", "57 27 34 16 31 19 80 -120 -10 -100", 0.4, 8);
+            Osc(Q, "Balaie", "20 10 40 10 30 110 12 -10 -10 -6", "22 12 15 15 26 112 14 -12 -8 -8", 0.8, 6, "balai");
+            Osc(Q, "Parapluie", "0 0 60 110 -8 12 6 0 -6 0", "0 2 61 110 -8 12 6 0 -6 0", 1.6, 3, "parapluie");
+            Osc(Q, "Joue de la guitare", "-6 0 -10 80 -50 -70 10 -8 -8 -4", "-6 4 -10 118 -50 -66 10 -10 -8 -6", 0.3, 12, "guitare").Son = "note";
+            Osc(Q, "Chante au micro", "-8 -15 70 130 -40 20 8 0 -8 0", "-14 -24 72 132 -60 10 10 -6 -8 -4", 0.8, 5, "micro");
+            Osc(Q, "DJ", "10 10 100 130 60 30 10 -8 -8 -8", "12 14 100 132 72 10 12 -12 -8 -10", 0.4, 10, "note");
+            Osc(Q, "Joue à la console", "5 20 55 60 60 55 90 0 84 0", "7 22 58 57 57 58 90 0 84 0", 0.25, 14, "telephone");
+            Osc(Q, "Lit le journal assis", "-8 20 50 80 55 75 90 0 84 0", "-8 23 51 80 56 75 90 0 84 0", 1.8, 3, "livre");
+            Osc(Q, "A le hoquet", S, "-4 -10 12 14 -12 14 6 0 -6 0 7", 0.9, 5).Son = "pop";
+            Autre(Osc("Gestes", "Mange", "4 8 40 60 -8 12", "6 14 75 135 -8 12", 0.6, 5));
+            Autre(Osc("Gestes", "Tousse", "20 20 80 130 -8 12", "10 10 80 125 -8 12", 0.3, 5));
+            Osc("Gestes", "Se frotte les yeux", "8 20 85 140 90 135", "8 22 88 138 87 137", 0.3, 6);
+            Autre(Osc("Gestes", "Fait du stop", "0 0 70 30 -8 12", "0 0 76 18 -8 12", 0.8, 3));
+            Osc("Gestes", "Prend une photo", "6 10 80 110 75 115", "6 12 81 110 76 115", 1.2, 2, "telephone").Son = "pop";
+            Autre(Osc("Gestes", "Ouf !", "0 -5 120 120 -8 12", "0 -5 126 100 -8 12", 0.6, 2));
+            Autre(Osc("Gestes", "Se gratte la nuque", "6 10 165 110 -8 12", "6 10 165 126 -8 12", 0.3, 5));
+            Osc("Gestes", "Câlin", "-4 -5 80 -10 -80 10", "6 5 60 80 55 85", 1.0, 2, "coeur");
+            Osc("Gestes", "Se ronge les ongles", "10 15 85 135 20 95", "10 17 87 133 20 95", 0.15, 12);
+            Anim peche = Osc("Fenêtres", "Pêche depuis le bord", "-8 5 60 30 50 40 22 -4 4 -32 -44", "-10 2 64 34 54 44 20 -6 6 -30 -44", 2.0, 5, "canne");
+            peche.SurFenetre = true;
+
+            // --- émotions
+            const string E = "Émotions";
+            Osc(E, "Fou rire", "0 0 60 60 70 50 60 -80 20 -20 0 -75", "5 5 70 50 60 60 20 -20 60 -80 0 -68", 0.3, 10);
+            Osc(E, "Caprice", "0 -10 150 60 170 10 -15 -60 -12 0 0 75", "0 -8 170 10 150 60 -15 0 -12 -60 0 75", 0.25, 10, "exclam");
+            Osc(E, "Choqué", "-10 -15 150 100 -150 -100 8 0 -8 0", "-12 -18 152 104 -152 -104 10 -4 -10 -4", 0.5, 4, "exclam");
+            Osc(E, "Supplie", "20 -20 75 60 80 55 5 -95 -5 -90", "24 -24 78 58 83 53 5 -95 -5 -90", 0.5, 5);
+            Osc(E, "Triomphe à genoux", "-20 -25 165 -5 -165 5 10 -100 0 -95", "-23 -28 168 -2 -168 2 10 -100 0 -95", 0.7, 4);
+            Cles(E, "Dépité", "0:" + S + ";300:0 -6 35 80 25 85 6 0 -6 0;700:0 4 15 30 5 35 6 0 -6 0;1100:18 30 5 5 -5 5 6 -5 -6 -5;2000:20 34 5 5 -5 5 6 -6 -6 -6;2400:" + S);
+            Osc(E, "Shoote dans un caillou", "8 20 -30 -40 -35 -45 6 0 -6 0", "8 22 -30 -40 -35 -45 40 -10 -6 0", 0.9, 3);
+            Osc(E, "Surexcité", "0 -10 150 40 -150 -40 10 -20 -10 -20 0 0 -8", "0 -12 160 20 -160 -20 20 -40 -20 -40 30 0 8", 0.35, 8, "note");
         }
 
         // ------------------------------------------------------------ deuxième fournée : fenêtres, pouvoirs, numéros
@@ -358,6 +536,7 @@ namespace MascotteStickman
                     case 4: p[I.Ep1] = -35; p[I.Co1] = 105; p[I.Ep2] = -45; p[I.Co2] = 112; break;                           // mains sur les hanches
                     case 5: p[I.Ep1] = 50; p[I.Co1] = 110; p[I.Ep2] = 40; p[I.Co2] = 118; break;                             // mains repliées
                     case 6: p[I.Ep1] = 90 + 14 * Math.Sin(2 * f); p[I.Ep2] = -90 + 14 * Math.Sin(2 * f); p[I.Torse] += 4 * Math.Sin(2 * f); break;   // bras en balancier
+                    case 7: p[I.Ep1] = 30 + 40 * Math.Sin(f + 1); p[I.Ep2] = -30 + 40 * Math.Sin(f + 2.5); p[I.Co1] = 20; p[I.Co2] = 20; p[I.Torse] += 14 * s; p[I.Tete] = 10 * Math.Sin(f + 0.8); break;   // titube
                 }
                 return p;
             });
@@ -397,7 +576,10 @@ namespace MascotteStickman
         static void Danses()
         {
             var nomsBras = new[] { "Poings en l'air", "Disco", "Vague", "Mains en l'air", "Moulinets", "Déhanché", "Tape des mains", "Boxe",
-                "Twist des bras", "Robot", "Guitare", "Lasso", "Égyptien", "Poulet", "Dab", "Rouleau" };
+                "Twist des bras", "Robot", "Guitare", "Lasso", "Égyptien", "Poulet", "Dab", "Rouleau",
+                "Floss", "YMCA", "Essuie-glaces", "Pom-pom" };
+            // les quatre lettres de YMCA : (épaule1, coude1, épaule2, coude2)
+            var lettres = new[] { new double[] { 150, 0, -150, 0 }, new double[] { 120, 120, -120, -120 }, new double[] { 150, 50, 40, -40 }, new double[] { 172, 25, -172, -25 } };
             var bras = new Action<double, double, double, double[]>[]
             {
                 (f, s, c, p) => { p[I.Ep1] = 125 + 45 * s; p[I.Co1] = 35; p[I.Ep2] = 125 - 45 * s; p[I.Co2] = 35; },
@@ -416,6 +598,16 @@ namespace MascotteStickman
                 (f, s, c, p) => { p[I.Ep1] = 35 + 40 * Math.Abs(s); p[I.Co1] = 140; p[I.Ep2] = -35 - 40 * Math.Abs(s); p[I.Co2] = -140; },
                 (f, s, c, p) => { double w = (1 + Math.Tanh(4 * s)) / 2; p[I.Ep1] = 118 + 14 * w; p[I.Co1] = 150 - 150 * w; p[I.Ep2] = 132 - 14 * w; p[I.Co2] = 150 * w; p[I.Tete] += 26; p[I.Torse] += 16; },
                 (f, s, c, p) => { p[I.Ep1] = 70 + 15 * Math.Sin(2 * f); p[I.Co1] = 95 + 15 * Math.Cos(2 * f); p[I.Ep2] = 70 - 15 * Math.Sin(2 * f); p[I.Co2] = 95 - 15 * Math.Cos(2 * f); },
+                (f, s, c, p) => { double w = Math.Sin(2 * f); p[I.Ep1] = 40 * w; p[I.Co1] = 8; p[I.Ep2] = 40 * w - 12; p[I.Co2] = 8; p[I.X] -= 5 * w; },
+                (f, s, c, p) =>
+                {
+                    double t = f / (2 * Math.PI) * 4, k = Math.Max(0, (t - Math.Floor(t) - 0.7) / 0.3);
+                    double[] a = lettres[(int)Math.Floor(t) % 4], b = lettres[((int)Math.Floor(t) + 1) % 4];
+                    k = k * k * (3 - 2 * k);
+                    p[I.Ep1] = a[0] + (b[0] - a[0]) * k; p[I.Co1] = a[1] + (b[1] - a[1]) * k; p[I.Ep2] = a[2] + (b[2] - a[2]) * k; p[I.Co2] = a[3] + (b[3] - a[3]) * k;
+                },
+                (f, s, c, p) => { p[I.Ep1] = 90; p[I.Co1] = 90 + 35 * s; p[I.Ep2] = 80; p[I.Co2] = 90 + 35 * s; },
+                (f, s, c, p) => { double w = (1 + Math.Tanh(4 * s)) / 2; p[I.Ep1] = -35 + 205 * w; p[I.Co1] = 105 - 105 * w; p[I.Ep2] = 170 - 215 * w; p[I.Co2] = 105 * w; },
             };
             var nomsJambes = new[] { "rebond", "pas chassés", "coups de pied", "twist", "course sur place", "sauts", "squats", "talons" };
             var tempos = new[] { 0.7, 0.9, 0.8, 0.8, 0.6, 0.7, 1.1, 0.8 };

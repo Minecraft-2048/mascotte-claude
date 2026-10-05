@@ -136,6 +136,9 @@ namespace MascotteStickman
             N(C, "enchaine", "Gestes pendant la marche (%)", 25, 0, 100);
             N(C, "sommeil", "S'endort après (minutes sans toucher au PC, 0 = jamais)", 10, 0, 120);
             N(C, "teleporte", "Envie de se téléporter (%)", 6, 0, 100);
+            B(C, "ferme", "MODE FARCEUR : il ferme des fenêtres en appuyant sur leur croix", false);
+            N(C, "fermeDelai", "Mode farceur : minutes entre deux fermetures", 5, 0.5, 120);
+            B(C, "fermeActive", "Mode farceur : peut aussi fermer la fenêtre que j'utilise", false);
             Ch(C, "styleSaut", "Sauts vers les fenêtres", 0, "variés", "simples", "toujours en salto", "atterrissage de héros");
 
             const string Z = "Sons";
@@ -358,6 +361,80 @@ namespace MascotteStickman
                     }
                 case "crayon":
                     dc.DrawLine(Plume(Color.FromRgb(0xFF, 0xD5, 0x4F), Math.Max(2, epaisseur * 0.5)), e(o.M1), e(o.M1 + avantBras * 14));
+                    break;
+                case "marteau":
+                    {
+                        Point bout = o.M1 + avantBras * 40;
+                        Vector travers = new Vector(-avantBras.Y, avantBras.X);
+                        dc.DrawLine(gris, e(o.M1), e(bout));
+                        dc.DrawLine(Plume(Color.FromRgb(0xC8, 0xC8, 0xD0), epaisseur * 2.4), e(bout - travers * 11), e(bout + travers * 11));
+                        if (phase > 0.36 && phase < 0.8)
+                        {
+                            double k = (phase - 0.36) / 0.44;
+                            dc.DrawEllipse(null, Plume(Color.FromArgb((byte)(220 * (1 - k)), 255, 255, 255), epaisseur * 0.6), e(new Point(o.M1.X + 20, -2)), (16 + 120 * k) * s, (3 + 12 * k) * s);
+                        }
+                        break;
+                    }
+                case "javelot":
+                    {
+                        double k = Math.Max(0, phase - 0.39);
+                        Point centre = phase < 0.39 ? o.M1 : new Point(o.M1.X + 760 * k, o.M1.Y - 20 - 120 * k + 500 * k * k);
+                        Vector axe = phase < 0.39 ? new Vector(0.95, -0.3) : new Vector(1, -0.25 + 1.2 * k);
+                        axe.Normalize();
+                        dc.DrawLine(gris, e(centre - axe * 34), e(centre + axe * 34));
+                        break;
+                    }
+                case "barre":
+                    {
+                        double y = Math.Min(o.M1.Y, o.M2.Y) - 2;
+                        dc.DrawLine(Plume(Color.FromRgb(0xC8, 0xC8, 0xD0), Math.Max(3, epaisseur * 0.8)), e(new Point(o.M1.X - 34, y)), e(new Point(o.M1.X + 34, y)));
+                        break;
+                    }
+                case "cerceau":
+                    dc.DrawEllipse(null, Plume(Color.FromRgb(0xFF, 0x4D, 0x9A), Math.Max(2, epaisseur * 0.5)), e(new Point(o.Hanche.X + 9 * Math.Cos(f), o.Hanche.Y - 6)), 27 * s, 7 * s);
+                    break;
+                case "balai":
+                    {
+                        Vector axe = o.M1 - o.M2;
+                        if (axe.Length < 3) axe = new Vector(0.5, 1);
+                        axe.Normalize();
+                        Point bas = o.M1 + axe * Math.Max(10, Math.Min(70, -o.M1.Y / Math.Max(0.2, axe.Y)));      // prolongé jusqu'au sol
+                        dc.DrawLine(gris, e(o.M2 - axe * 10), e(bas));
+                        dc.DrawLine(Plume(Color.FromRgb(0xE0, 0xB0, 0x60), epaisseur * 1.2), e(bas + new Vector(-8, -3)), e(bas + new Vector(8, -3)));
+                        break;
+                    }
+                case "canne":
+                    {
+                        Point bout = o.M1 + new Vector(46, -34), flotteur = new Point(bout.X + 4 * Math.Sin(f), bout.Y + 96);
+                        dc.DrawLine(fin, e(o.M1), e(bout));
+                        dc.DrawLine(Plume(Color.FromArgb(180, 255, 255, 255), 1), e(bout), e(flotteur));
+                        dc.DrawEllipse(Brushes.OrangeRed, null, e(flotteur), 3 * s, 3 * s);
+                        break;
+                    }
+                case "parapluie":
+                    {
+                        Point sommet = o.M1 + new Vector(0, -46);
+                        dc.DrawLine(fin, e(o.M1), e(sommet));
+                        var dome = new StreamGeometry();
+                        using (StreamGeometryContext g = dome.Open()) { g.BeginFigure(e(sommet + new Vector(-30, 8)), true, true); g.QuadraticBezierTo(e(sommet + new Vector(0, -26)), e(sommet + new Vector(30, 8)), true, true); }
+                        dc.DrawGeometry(teinte, gris, dome);
+                        break;
+                    }
+                case "guitare":
+                    {
+                        Point corps = o.Hanche + (o.Cou - o.Hanche) * 0.42 + new Vector(9, 0);      // contre le ventre, le manche vers l'autre main
+                        Vector manche = o.M2 - corps;
+                        if (manche.Length > 0.01) manche.Normalize();
+                        dc.DrawLine(gris, e(corps), e(o.M2 + manche * 7));
+                        dc.DrawEllipse(teinte, fin, e(corps), 10 * s, 8 * s);
+                        break;
+                    }
+                case "micro":
+                    dc.DrawLine(gris, e(o.M1), e(o.M1 + new Vector(3, -9)));
+                    dc.DrawEllipse(clair, null, e(o.M1 + new Vector(4, -12)), 4 * s, 4 * s);
+                    break;
+                case "ballonjongle":
+                    dc.DrawEllipse(clair, fin, e(new Point(o.P1.X + 6, o.P1.Y - 9 - 55 * Math.Abs(Math.Cos(f / 2)))), 7 * s, 7 * s);
                     break;
                 case "rayon":
                     if (phase > 0.45 && phase < 0.86)
@@ -669,6 +746,10 @@ namespace MascotteStickman
         bool sonFait;                                 // le bruitage de l'animation en cours a déjà été joué
         int styleSaut; double tVol, dureeVol;         // saut vers une fenêtre : 0 simple, 1 en salto, 2 atterrissage de héros
         double voile = 1, voileVise = 1;              // fondu de la téléportation
+        double prochaineFermeture;                    // mode farceur
+        IntPtr victime;
+        bool croixPressee;
+        Action apresSaut;                            // à faire une fois posé, après un saut voulu
 
         public Bonhomme()
         {
@@ -773,6 +854,7 @@ namespace MascotteStickman
                 // quelques commandes en plus des noms d'animations : @reglages, @fenetre, @couleur RRVVBB
                 if (nom == "@reglages") { OuvrirReglages(); return; }
                 if (nom == "@fenetre") { if (etat == Etat.Anime) SauterSurFenetre(); return; }
+                if (nom.StartsWith("@fermer ")) { if (!FermerUneFenetre(nom.Substring(8).Trim())) Dire("Je ne trouve pas cette fenêtre", 2.5); return; }
                 if (nom.StartsWith("@couleur ")) { R.Mettre("couleur", Convert.ToInt32(nom.Substring(9).Trim(), 16)); R.Mettre("arcenciel", 0); Appliquer(); return; }
                 Anim a = Biblio.Trouver(nom);
                 if (a != null && etat == Etat.Anime && (!a.SurFenetre || support != IntPtr.Zero)) Dire(a.Nom, 2.5);
@@ -972,6 +1054,10 @@ namespace MascotteStickman
 
         void Choisir()
         {
+            // mode farceur : la première fermeture arrive peu après l'activation, les suivantes au rythme réglé
+            if (!R.O("ferme")) prochaineFermeture = 0;
+            else if (prochaineFermeture == 0) prochaineFermeture = temps + Math.Min(R.D("fermeDelai") * 60, 20 + 25 * hasard.NextDouble());
+            else if (temps > prochaineFermeture && FermerUneFenetre(null)) return;
             if (R.O("fenetres") && hasard.NextDouble() * 100 < R.D("fenetresChance") && SauterSurFenetre()) return;
             if (hasard.NextDouble() * 100 < R.D("teleporte") && Teleporter()) return;
 
@@ -1062,6 +1148,7 @@ namespace MascotteStickman
             geste = null; dort = false;
             balance = 0; vBalance = 0;
             voileVise = 1;
+            apresSaut = null;
             Sons.Jouer("attrape", "sonsSouris");
             Fondre();
         }
@@ -1132,7 +1219,7 @@ namespace MascotteStickman
             {
                 double sol = SystemParameters.WorkArea.Bottom;
                 IntPtr fenetre = IntPtr.Zero;
-                if (R.O("fenetres"))
+                if (R.O("fenetres") || apresSaut != null)
                     foreach (Bord bord in Bords())
                         if (avant.Y <= bord.Haut + 1 && ancre.Y >= bord.Haut && bord.Haut < sol - 40
                             && ancre.X > bord.Gauche + 6 && ancre.X < bord.Droite - 6 && BordLibre(bord, ancre.X))
@@ -1179,7 +1266,9 @@ namespace MascotteStickman
             Bord bord;
             if (support != IntPtr.Zero && LireBord(support, out bord)) supportX = ancre.X - bord.Gauche; else support = IntPtr.Zero;
             Sons.Jouer("atterrit", "sonsSauts");
-            if (sautVoulu) Jouer(styleSaut == 2 ? Biblio.Heros : Biblio.Reception, 1);
+            Action suite = apresSaut;
+            apresSaut = null;
+            if (sautVoulu) Jouer(styleSaut == 2 ? Biblio.Heros : Biblio.Reception, 1, suite);
             else
             {
                 face = vitesse.X < 0 ? -1 : 1;
@@ -1298,6 +1387,14 @@ namespace MascotteStickman
             var teleport = new MenuItem { Header = "Se téléporter" };
             teleport.Click += (o, e) => Teleporter();
             menu.Items.Add(teleport);
+            var farceur = new MenuItem { Header = "Mode farceur : il ferme des fenêtres", IsCheckable = true };
+            farceur.Click += (o, e) =>
+            {
+                R.Mettre("ferme", farceur.IsChecked ? 1 : 0);
+                Dire(farceur.IsChecked ? "Hé hé… gare à tes fenêtres !" : "D'accord, je ne touche plus à rien", 3);
+            };
+            menu.Opened += (o, e) => farceur.IsChecked = R.O("ferme");
+            menu.Items.Add(farceur);
             var coin = new MenuItem { Header = "Revenir dans le coin" };
             coin.Click += (o, e) =>
             {
@@ -1453,6 +1550,72 @@ namespace MascotteStickman
             return true;
         }
 
+        // Mode farceur (désactivé par défaut) : il va jusqu'à la croix d'une fenêtre et appuie dessus.
+        // C'est l'équivalent exact d'un clic sur la croix : un programme qui a du travail non enregistré
+        // peut encore demander confirmation, rien n'est tué de force.
+        // filtre : ne viser qu'une fenêtre dont le titre contient ce texte (commande @fermer, pour les essais).
+        bool FermerUneFenetre(string filtre)
+        {
+            if (etat != Etat.Anime) return false;
+            IntPtr active = GetForegroundWindow();
+            var choix = new List<Bord>();
+            var arrivees = new List<double>();
+            foreach (Bord bord in Bords())
+            {
+                if (bord.Haut > SystemParameters.WorkArea.Bottom - 60 || !BordLibre(bord, bord.Droite - CroixX)) continue;      // croix cachée par une autre fenêtre
+                if (filtre != null)
+                {
+                    var titre = new StringBuilder(300);
+                    GetWindowText(bord.Fenetre, titre, titre.Capacity);
+                    if (titre.ToString().IndexOf(filtre, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                }
+                else if (bord.Fenetre == active && !R.O("fermeActive")) continue;      // pas celle qu'on est en train d'utiliser
+                for (int essai = 0; essai < 6; essai++)                                 // un endroit dégagé où atterrir, à gauche de la croix
+                {
+                    double x = Math.Max(bord.Gauche + 30, bord.Droite - 70 - hasard.NextDouble() * 170);
+                    if (!BordLibre(bord, x)) continue;
+                    choix.Add(bord); arrivees.Add(x);
+                    break;
+                }
+            }
+            if (choix.Count == 0) return false;
+            int n = hasard.Next(choix.Count);
+            for (int i = 0; i < choix.Count; i++) if (choix[i].Fenetre == support) n = i;      // déjà dessus : autant en profiter
+            prochaineFermeture = temps + R.D("fermeDelai") * 60 * (0.7 + 0.6 * hasard.NextDouble());
+            victime = choix[n].Fenetre;
+            croixPressee = false;
+            Dire("Hé hé hé…", 2.5);
+            if (support == victime) AllerALaCroix();
+            else
+            {
+                apresSaut = AllerALaCroix;
+                Bondir(new Point(arrivees[n], choix[n].Haut));
+            }
+            return true;
+        }
+
+        const double CroixX = 23;      // milieu du bouton de fermeture, compté depuis le bord droit de la fenêtre
+
+        void AllerALaCroix()
+        {
+            Bord bord;
+            if (support != victime || !LireBord(victime, out bord)) { Repos(); return; }
+            // accroupi, sa main descend à 37 px devant lui : il s'arrête donc juste avant la croix
+            AllerVers(bord.Droite - CroixX - 37 * s, Biblio.Marche, () =>
+            {
+                face = 1;
+                Jouer(Biblio.Appuie, 1, () =>
+                {
+                    if (support != victime || !IsWindow(victime)) { Repos(); return; }
+                    Sons.Jouer("pop", "sonsPouvoirs");
+                    croixPressee = true;
+                    PostMessage(victime, WM_SYSCOMMAND, (IntPtr)SC_CLOSE, IntPtr.Zero);      // comme un vrai clic sur la croix
+                    // si la fenêtre se ferme, il n'a plus rien sous les pieds et tombe ; sinon il se relève
+                    Jouer(Biblio.Relache, 1, () => { croixPressee = false; Dire("Elle résiste…", 2.5); Repos(); });
+                });
+            });
+        }
+
         bool SauterSurFenetre()
         {
             double sol = SystemParameters.WorkArea.Bottom;
@@ -1499,6 +1662,8 @@ namespace MascotteStickman
             if (!ok)                                                                                 // plus rien sous les pieds : il tombe
             {
                 styleSaut = 0;
+                if (croixPressee && support == victime) Dire("Oups !", 2.5);                         // il vient de fermer la fenêtre sous ses pieds
+                croixPressee = false;
                 Sons.Jouer("glisse", "sonsSauts");
                 Lancer(new Vector(0, 0), true, 0);
                 return true;
@@ -1518,6 +1683,11 @@ namespace MascotteStickman
         const int GWL_EXSTYLE = -20, WS_EX_TOOLWINDOW = 0x80, WS_EX_TRANSPARENT = 0x20, WS_EX_NOACTIVATE = 0x08000000;
         const int DWMWA_EXTENDED_FRAME_BOUNDS = 9, DWMWA_CLOAKED = 14;
         const uint GA_ROOT = 2;
+        const int WM_SYSCOMMAND = 0x0112, SC_CLOSE = 0xF060;
+
+        [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr fenetre, StringBuilder texte, int taille);
+        [DllImport("user32.dll")] static extern bool PostMessage(IntPtr fenetre, int message, IntPtr w, IntPtr l);
 
         [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
         [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }

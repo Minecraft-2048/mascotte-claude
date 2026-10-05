@@ -40,7 +40,7 @@ Télécharger un exe dans les [Releases](../../releases) et le lancer. Windows 1
 | --- | --- |
 | `MascotteClaude.exe` | Claude : suit ce que fait Claude Code |
 | `MascotteChat.exe` | un chaton : se promène, joue, miaule quand on clique, fait des siestes |
-| `MascotteStickman.exe` | un stickman dans l'esprit des stick figures d'Alan Becker : couleur au choix, 377 animations, bruitages, on l'attrape et on le lance |
+| `MascotteStickman.exe` | un stickman dans l'esprit des stick figures d'Alan Becker : couleur au choix, 479 animations, bruitages, on l'attrape et on le lance |
 
 Chaque mascotte a son menu au clic droit (taille, animations, démarrage avec Windows, quitter).
 
@@ -120,8 +120,9 @@ Le script utilise le compilateur C# livré avec Windows (.NET Framework 4). Pyth
 `MascotteStickman.exe` est à part : il n'a pas d'images, il est dessiné par le programme à partir d'un squelette (`src/Stickman.cs` et `src/StickmanAnimations.cs`). Clic droit dessus pour choisir sa couleur, jouer une de ses animations ou ouvrir ses réglages ; on peut l'attraper à la souris et le lancer.
 
 - **Couleur et tête** : 16 teintes ou n'importe quelle couleur. Comme dans la série, la tête est pleine, sauf pour l'orange, le noir et le rouge sombre (tête creuse) ; un réglage permet de forcer l'un ou l'autre.
-- **377 animations** : déplacements, danses (16 mouvements de bras × 8 de jambes), gestes, combat, acrobaties, sport, vie quotidienne, émotions, et quelques-unes réservées au bord des fenêtres (assis, jambes dans le vide).
+- **479 animations** : déplacements, danses (20 mouvements de bras × 8 de jambes), gestes, combat, acrobaties, sport, vie quotidienne, émotions, et quelques-unes réservées au bord des fenêtres (assis, jambes dans le vide, pêche à la ligne). Une trentaine d'accessoires dessinés par le programme : épée, marteau, guitare, parapluie, balai…
 - **Fenêtres** : il saute sur le haut des fenêtres (saut simple, salto ou atterrissage de héros), voyage avec elles, retombe si elles se ferment, et peut se téléporter.
+- **Mode farceur** (désactivé par défaut, case du menu ou onglet Comportement) : de temps en temps, il saute sur une fenêtre, marche jusqu'à sa croix et appuie dessus avec la main. C'est un vrai clic sur la croix : un programme qui a du travail non enregistré demande encore confirmation, mais un jeu ou une vidéo se ferment aussitôt. Il épargne la fenêtre en cours d'utilisation (réglable), prévient par une bulle, et il suffit de l'attraper à la souris pour l'en empêcher.
 - **Sons** : 14 bruitages calculés par le programme (saut, atterrissage, coups, épée, énergie…), sans aucun fichier audio. Volume et familles de sons réglables.
 - **Réglages** : une fenêtre à onglets, avec une case par animation.
 
