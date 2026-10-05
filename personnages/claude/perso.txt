@@ -1,0 +1,8 @@
+id=Claude
+nom=Claude
+bonjour=Bonjour !
+action=claude
+glyphe=E70F
+titre=Nouvelle conversation avec Claude
+clic=geste
+droite=230

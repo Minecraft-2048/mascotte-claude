@@ -1,3 +1,6 @@
 # l'exe se télécharge dans les Releases
 *.exe
 __pycache__/
+# personnages de marques deposees : gardes en local, jamais publies
+personnages/mario/
+personnages/youtube/

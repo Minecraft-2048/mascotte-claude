@@ -1,0 +1,10 @@
+id=Chat
+nom=Chat
+bonjour=Miaou !
+action=parole
+glyphe=EB51
+titre=Caresser
+clic=parole
+paroles=Miaou !|Mrrr…|Prrrr|Miaou ?|Nya !
+sieste=1
+droite=570
