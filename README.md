@@ -34,16 +34,9 @@ Le texte après l'état remplace la bulle par défaut.
 
 ## Installer
 
-Télécharger un exe dans les [Releases](../../releases) et le lancer. Windows 10 ou 11, rien d'autre à installer.
+Télécharger `MascotteClaude.exe` dans les [Releases](../../releases) et le lancer. Windows 10 ou 11, rien d'autre à installer. Son menu est au clic droit (taille, animations, démarrage avec Windows, quitter).
 
-| Exe | Mascotte |
-| --- | --- |
-| `MascotteClaude.exe` | Claude : suit ce que fait Claude Code |
-| `MascotteChat.exe` | un chaton : se promène, joue, miaule quand on clique, fait des siestes |
-
-Chaque mascotte a son menu au clic droit (taille, animations, démarrage avec Windows, quitter).
-
-Le stickman, qui vivait ici, a maintenant son propre dépôt : [mascotte-stickman](https://github.com/Minecraft-2048/mascotte-stickman).
+Les autres mascottes nées ici ont maintenant chacune leur dépôt : le chaton dans [mascotte-chat](https://github.com/Minecraft-2048/mascotte-chat), le stickman dans [mascotte-stickman](https://github.com/Minecraft-2048/mascotte-stickman).
 
 ## La brancher sur Claude Code
 
