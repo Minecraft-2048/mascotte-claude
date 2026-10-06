@@ -580,16 +580,23 @@ namespace MascotteClaude
             // Rappelée à chaque changement de thème : les atlas sont relus et recolorés.
             Assembly moi = Assembly.GetExecutingAssembly();
             string externe = Path.Combine(Path.GetDirectoryName(moi.Location), "mascotte.png");
-            Dictionary<int, int> palette = theme > 0 && theme < Perso.Themes.Length ? Perso.Palette(Perso.Themes[theme]) : null;
+            // Un autre personnage (thème) : ses propres atlas s'il en a (theme-luigi.png, theme-luigi2.png…),
+            // sinon ceux de la mascotte repeints avec la palette de la fiche.
+            bool autre = theme > 0 && theme < Perso.Themes.Length;
+            Dictionary<int, int> palette = autre ? Perso.Palette(Perso.Themes[theme]) : null;
+            string prefixe = autre ? "theme-" + Perso.Themes[theme].ToLowerInvariant() : null;
             formes.Clear();
             tetes.Clear();
             foreach (string nom in new[] { "atlas.png", "atlas2.png", "atlas3.png" })
-                using (Stream flux = nom == "atlas.png" && File.Exists(externe) ? (Stream)File.OpenRead(externe) : moi.GetManifestResourceStream(nom))
+            {
+                Stream propre = autre ? moi.GetManifestResourceStream(prefixe + nom.Substring(5)) : null;
+                using (Stream flux = propre != null ? propre
+                    : nom == "atlas.png" && File.Exists(externe) ? (Stream)File.OpenRead(externe) : moi.GetManifestResourceStream(nom))
                 {
                     if (flux == null) continue;
                     int largeur, hauteur;
                     byte[] tout = Decoder(flux, out largeur, out hauteur);
-                    if (palette != null && nom != "atlas3.png") Recolorer(tout, palette);    // la forme « de feu » garde ses couleurs, comme dans le jeu
+                    if (propre == null && palette != null && nom != "atlas3.png") Recolorer(tout, palette);    // la forme « de feu » garde ses couleurs, comme dans le jeu
                     var cases = new BitmapSource[Lignes, Colonnes];
                     for (int l = 0; l < Lignes && (l + 1) * CaseH <= hauteur; l++)
                         for (int c = 0; c < Colonnes && (c + 1) * CaseL <= largeur; c++)
@@ -601,6 +608,7 @@ namespace MascotteClaude
                     while (tete < CaseH && LigneVide(tout, largeur, tete, CaseL)) tete++;
                     tetes.Add(tete);
                 }
+            }
             images = formes[Math.Min(forme, formes.Count - 1)];
 
             // objets.png : bande de tuiles carrées (bloc ?, bloc vide, champignon, pièce, fleur)
@@ -803,6 +811,7 @@ namespace MascotteClaude
                 {
                     foreach (MenuItem autre in taille.Items) autre.IsChecked = autre == choix;
                     echelle = valeur;
+                    if (Perso.Plateformes && support == IntPtr.Zero && mode != Mode.Saut) ancre.Y = maison.Y = Sol;   // ses pieds restent sur le bord
                     AppliquerEchelle();
                     Enregistrer();
                 };
@@ -866,6 +875,11 @@ namespace MascotteClaude
         void MontrerPilule()
         {
             minuteurPilule.Stop();
+            // tout en bas de l'écran, la pilule n'a pas la place de se glisser sous les pieds : elle passe au-dessus de la tête
+            bool dessous = ancre.Y + ZonePilule <= SystemParameters.WorkArea.Bottom + 1;
+            Grid.SetRow(pilule, dessous ? 2 : 0);
+            pilule.VerticalAlignment = dessous ? VerticalAlignment.Top : VerticalAlignment.Bottom;
+            pilule.Margin = dessous ? new Thickness(0, 2, 0, 0) : new Thickness(0, 0, 0, 2 - Math.Max(0, tetes[forme] * echelle - 8));
             pilule.IsHitTestVisible = true;
             Fondu(pilule, 1);
         }
@@ -930,10 +944,9 @@ namespace MascotteClaude
             SetWindowLong(poignee, GWL_EXSTYLE, GetWindowLong(poignee, GWL_EXSTYLE) | WS_EX_TOOLWINDOW);
         }
 
-        static Point PlaceParDefaut()
+        Point PlaceParDefaut()
         {
-            Rect zone = SystemParameters.WorkArea;
-            return new Point(zone.Right - DroiteDefaut, zone.Bottom - BasDefaut);
+            return new Point(SystemParameters.WorkArea.Right - DroiteDefaut, Sol);
         }
 
         void AppliquerEchelle()
@@ -957,7 +970,7 @@ namespace MascotteClaude
         {
             double gauche = SystemParameters.VirtualScreenLeft, haut = SystemParameters.VirtualScreenTop;
             ancre.X = Math.Max(gauche + 40, Math.Min(gauche + SystemParameters.VirtualScreenWidth - 40, ancre.X));
-            ancre.Y = Math.Max(haut + 80, Math.Min(haut + SystemParameters.VirtualScreenHeight - 10, ancre.Y));
+            ancre.Y = Math.Max(haut + 80, Math.Min(Math.Max(haut + SystemParameters.VirtualScreenHeight - 10, Sol), ancre.Y));
         }
 
         Point Curseur()
@@ -1455,7 +1468,7 @@ namespace MascotteClaude
                         case "suivrejeu": suivreJeu = nombre != 0; break;
                     }
                 }
-            if (Perso.Plateformes) bas = BasDefaut;               // celle qui saute sur les fenêtres repart toujours du sol
+            if (Perso.Plateformes) bas = Bas;                     // celle qui saute sur les fenêtres repart toujours du sol
             // la place est retenue par rapport au coin bas-droit de l'écran, là où elle vit d'habitude
             Rect zone = SystemParameters.WorkArea;
             ancre = new Point(zone.Right - droite, zone.Bottom - bas);
@@ -1509,7 +1522,11 @@ namespace MascotteClaude
 
         double Pieds { get { return (CaseH - PiedsCase) * echelle; } }      // de la plante des pieds à l'ancre
 
-        double Sol { get { return SystemParameters.WorkArea.Bottom - BasDefaut; } }
+        // Celles qui sautent sur les fenêtres marchent tout en bas de l'écran, la plante des pieds sur le bord ;
+        // les autres se tiennent un peu plus haut, la place de leur pilule.
+        double Bas { get { return Perso.Plateformes ? -Pieds : BasDefaut; } }
+
+        double Sol { get { return SystemParameters.WorkArea.Bottom - Bas; } }
 
         bool LireBord(IntPtr fenetre, out Bord bord)
         {

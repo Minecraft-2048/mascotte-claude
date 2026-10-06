@@ -85,7 +85,8 @@ NES_FORMES = {
 }
 
 
-def sprites_nes(chemin, forme):
+def sprites_nes(chemin, forme, habit=None):
+    """habit(sprite, pose) : redessine chaque sprite avant agrandissement (les autres personnages, voir habits_nes)."""
     a = np.asarray(Image.open(chemin).convert("RGBA"))
     y0, y1 = forme["y"]
     a = a[y0:y1, a.shape[1] // 2:]
@@ -96,7 +97,10 @@ def sprites_nes(chemin, forme):
         x0, x1 = colonnes[c]
         rangees = bandes(plein[:, x0:x1].any(axis=1), mini=3)
         ya, yb = rangees[min(r, len(rangees) - 1)]
-        sprites[nom] = np.repeat(np.repeat(a[ya:yb, x0:x1], NES_GROS, axis=0), NES_GROS, axis=1)
+        petit = a[ya:yb, x0:x1]
+        if habit:
+            petit = habit(petit, nom)
+        sprites[nom] = np.repeat(np.repeat(petit, NES_GROS, axis=0), NES_GROS, axis=1)
     # ces sprites n'ont ni clin d'oeil ni salut : on fait avec les poses qui existent
     for nom, source in (("clin", "repos"), ("accroupi", "repos"), ("revue", "repos"), ("salut_a", "saut"),
                         ("salut_b", "repos"), ("rate", "accroupi"), ("travail", "repos")):
@@ -371,6 +375,8 @@ class Atelier:
         im = Image.fromarray(np.ascontiguousarray(s), "RGBA").convert("RGBa")
         im = im.resize((l, h), Image.Resampling.NEAREST if self.net else Image.Resampling.LANCZOS).convert("RGBA")
         x0, y0 = round(CASE_L / 2 - cx * kx) + dx, SOL - h + dy
+        if y0 < 0 and h <= SOL:
+            y0 = 0                              # un sprite tres grand rebondit moins haut plutot que de perdre le haut de sa tete
         if x0 < 0 or y0 < 0 or x0 + l > CASE_L or y0 + h > CASE_H:
             print(f"  attention : {nom} deborde de la case ({x0},{y0} {l}x{h})")
         toile = Image.new("RGBA", (CASE_L * 3, CASE_H * 3), (0, 0, 0, 0))
@@ -398,6 +404,13 @@ def construire(nom, perso):
         for suffixe, forme in perso["formes"].items():
             sprites = sprites_nes(perso["planche"], forme)
             assembler(sprites, Atelier(sprites, NES_ECHELLE), perso, suffixe)
+        # les autres personnages (themes de la fiche) : memes poses, redessinees, un atlas par forme
+        import habits_nes
+        for theme in habits_nes.THEMES:
+            for suffixe, forme in perso["formes"].items():
+                sprites = sprites_nes(perso["planche"], forme, lambda s, pose: habits_nes.habiller(
+                    s, theme, grand=suffixe != "", feu=suffixe == "3", pose=pose))
+                assembler(sprites, Atelier(sprites, NES_ECHELLE), perso, suffixe, prefixe="theme-" + theme.lower())
         objets_nes(perso)
         return
     sprites = lire_planche(perso["planche"], POSES)
@@ -423,10 +436,11 @@ def construire(nom, perso):
     assembler(sprites, Atelier(sprites), perso, "")
 
 
-def assembler(sprites, atelier, perso, suffixe):
-    """Ecrit un atlas (et, pour la forme principale, l'icone et les apercus)."""
-    principal = suffixe == ""
-    chemin_atlas = perso["atlas"].with_name(perso["atlas"].stem + suffixe + ".png")
+def assembler(sprites, atelier, perso, suffixe, prefixe=None):
+    """Ecrit un atlas (et, pour la forme principale, l'icone et les apercus).
+    prefixe : nom de fichier d'un autre personnage du meme dossier (theme-luigi...), sans icone ni gif."""
+    principal = suffixe == "" and prefixe is None
+    chemin_atlas = perso["atlas"].with_name((prefixe or perso["atlas"].stem) + suffixe + ".png")
     f = atelier.image
     # variantes facultatives : une troisieme pose de marche, une seconde pose de travail
     if "marche_c" in sprites:
@@ -496,7 +510,8 @@ def assembler(sprites, atelier, perso, suffixe):
     teinte = (43, 45, 49, 255)
     fond = Image.new("RGBA", atlas.size, teinte)
     fond.alpha_composite(atlas)
-    fond.resize((atlas.width // 2, atlas.height // 2), Image.Resampling.LANCZOS).save(perso["apercus"] / f"apercu-atlas{suffixe}.png")
+    fond.resize((atlas.width // 2, atlas.height // 2), Image.Resampling.LANCZOS).save(
+        perso["apercus"] / f"apercu-{prefixe or 'atlas'}{suffixe}.png")
     if not principal:
         return
     vues, durees = [], []

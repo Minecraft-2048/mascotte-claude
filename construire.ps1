@@ -7,8 +7,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
 if (Get-Command python -ErrorAction SilentlyContinue) {
-    $avecImages = @($Noms | Where-Object { $_ -and $_ -ne 'stickman' })      # le stickman n'a pas d'atlas
-    if (-not $Noms -or $avecImages.Count -gt 0) { python outils\construire_atlas.py @avecImages }
+    python outils\construire_atlas.py @Noms
     if ($LASTEXITCODE -ne 0) { throw "La construction des atlas a echoue." }
 }
 
@@ -28,6 +27,8 @@ foreach ($dossier in Get-ChildItem personnages -Directory) {
         $chemin = Join-Path $dossier.FullName $nom
         if (Test-Path $chemin) { "/resource:$chemin,$nom" }
     }
+    # autres personnages du meme dossier (themes de la fiche) : theme-luigi.png, theme-luigi2.png...
+    $extras = @($extras) + @(foreach ($t in Get-ChildItem $dossier.FullName -Filter 'theme-*.png') { "/resource:$($t.FullName),$($t.Name)" })
 
     # l'exe va a la racine du projet, sauf si la fiche lui donne un autre dossier (sortie=)
     $exe = "Mascotte$id.exe"
@@ -44,13 +45,4 @@ foreach ($dossier in Get-ChildItem personnages -Directory) {
         src\Mascotte.cs
     if ($LASTEXITCODE -ne 0) { throw "La compilation de Mascotte$id a echoue." }
     Write-Host "OK : $exe"
-}
-
-# Le stickman n'a ni dossier ni images : il est dessine par le programme (squelette anime).
-if (-not $Noms -or $Noms -contains 'stickman') {
-    & "$net\csc.exe" /nologo /target:winexe /optimize+ /codepage:65001 /out:MascotteStickman.exe /win32icon:assets\stickman.ico `
-        /r:"$net\WPF\PresentationFramework.dll" /r:"$net\WPF\PresentationCore.dll" /r:"$net\WPF\WindowsBase.dll" /r:System.Xaml.dll `
-        src\Stickman.cs src\StickmanAnimations.cs
-    if ($LASTEXITCODE -ne 0) { throw "La compilation de MascotteStickman a echoue." }
-    Write-Host "OK : MascotteStickman.exe"
 }

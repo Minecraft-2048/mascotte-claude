@@ -4,3 +4,4 @@ __pycache__/
 # personnages de marques deposees : gardes en local, jamais publies
 personnages/mario/
 personnages/youtube/
+outils/habits_nes.py
